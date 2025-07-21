@@ -9,12 +9,6 @@ def get_sense_data():
     sense_data.append(sense.get_temperature())
     sense_data.append(sense.get_pressure())
     sense_data.append(sense.get_humidity())
-    # Get colour sensor data (version 2 Sense HAT only)
-    red, green, blue, clear = sense.colour.colour
-    sense_data.append(red)
-    sense_data.append(green)
-    sense_data.append(blue)
-    sense_data.append(clear)
     # Get orientation data
     orientation = sense.get_orientation()
     sense_data.append(orientation["yaw"])
@@ -37,7 +31,7 @@ def get_sense_data():
     sense_data.append(gyro["z"])
     # Get the date and time
     sense_data.append(datetime.now())
-    
+
     return sense_data
 
 while True:
