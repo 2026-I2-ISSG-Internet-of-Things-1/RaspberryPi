@@ -4,6 +4,10 @@ import time
 # USB-Serial connections to Arduinos
 ser_in = serial.Serial("/dev/ttyACM0", 9600, timeout=1)
 ser_out = serial.Serial("/dev/ttyACM1", 9600, timeout=1)
+# Allow Arduinos to reset and Serial to initialize
+time.sleep(2)
+ser_in.reset_input_buffer()
+ser_out.reset_input_buffer()
 
 MAX_READ = 32  # max bytes Arduino will send
 
@@ -11,16 +15,26 @@ MAX_READ = 32  # max bytes Arduino will send
 def read_input():
     # Read a line from InputUnit over Serial, parse CSV
     s = ser_in.readline().decode("ascii", errors="ignore").strip()
+    if s:
+        print(f"DEBUG [IN]: '{s}'")
     if not s:
         return None, None, None
-    temp_str, lux_str, btn_str = s.split(",")
+    try:
+        temp_str, lux_str, btn_str = s.split(",")
+    except ValueError:
+        return None, None, None
     return float(temp_str), int(lux_str), int(btn_str)
 
 
 def read_color_index():
     # Read a line from OutputUnit over Serial and parse color index
     s = ser_out.readline().decode("ascii", errors="ignore").strip()
-    return int(s) if s else None
+    if s:
+        print(f"DEBUG [OUT]: '{s}'")
+    try:
+        return int(s) if s else None
+    except ValueError:
+        return None
 
 
 def main():
