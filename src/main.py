@@ -1,66 +1,37 @@
 import serial
 import time
 
-# USB-Serial connections to Arduinos
-ser_in = serial.Serial("/dev/ttyACM0", 9600, timeout=1)
-ser_out = serial.Serial("/dev/ttyACM1", 9600, timeout=1)
-# Allow Arduinos to reset and Serial to initialize
-time.sleep(2)
-ser_in.reset_input_buffer()
-ser_out.reset_input_buffer()
-
-MAX_READ = 32  # max bytes Arduino will send
+# Configuration du port série (adapter /dev/ttyACM0 ou /dev/ttyUSB0 selon ton cas)
+arduino = serial.Serial("/dev/ttyACM0", 9600, timeout=1)
 
 
-def read_input():
-    # Read a line from InputUnit over Serial, parse CSV
-    s = ser_in.readline().decode("ascii", errors="ignore").strip()
-    if s:
-        print(f"DEBUG [IN]: '{s}'")
-    if not s:
-        return None, None, None
-    try:
-        temp_str, lux_str, btn_str = s.split(",")
-    except ValueError:
-        return None, None, None
-    return float(temp_str), int(lux_str), int(btn_str)
+# Fonction pour envoyer une commande et lire la réponse
+def send_command(command):
+    arduino.write((command + "\n").encode())
+    response = arduino.readline().decode().strip()
+    return response
 
 
-def read_color_index():
-    # Read a line from OutputUnit over Serial and parse color index
-    s = ser_out.readline().decode("ascii", errors="ignore").strip()
-    if s:
-        print(f"DEBUG [OUT]: '{s}'")
-    try:
-        return int(s) if s else None
-    except ValueError:
-        return None
+try:
+    while True:
+        # Demande température
+        temp = send_command("GET TEMP")
 
+        # Demande luminosité
+        lum = send_command("GET LUM")
 
-def main():
-    try:
-        while True:
-            # Read raw CSV from input Arduino
-            raw = ser_in.readline().decode("ascii", errors="ignore").strip()
-            if not raw:
-                continue
-            print(f"DEBUG FORWARD: '{raw}'")
-            # Forward data to output Arduino
-            ser_out.write((raw + "\n").encode())
-            # Optionally parse and display locally
-            try:
-                temp_str, lux_str, btn_str = raw.split(",")
-                temp_val = float(temp_str)
-                lux_val = int(lux_str)
-                btn_val = int(btn_str)
-                state = "PRESSED" if btn_val else "Released"
-                print(f"Temp: {temp_val:.2f}°C | Lux: {lux_val} | Button: {state}")
-            except ValueError:
-                pass
-            time.sleep(1)
-    except KeyboardInterrupt:
-        print("\nArrêt du programme.")
+        # Demande état du bouton
+        button = send_command("GET BUTTON")
 
+        # Affiche les données reçues
+        print("=== Données capteurs ===")
+        print(temp)
+        print(lum)
+        print(button)
+        print("========================\n")
 
-if __name__ == "__main__":
-    main()
+        time.sleep(0.5)
+
+except KeyboardInterrupt:
+    print("Arrêt du programme.")
+    arduino.close()
