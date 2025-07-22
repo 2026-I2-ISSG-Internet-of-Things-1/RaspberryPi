@@ -1,38 +1,44 @@
-from sense_hat import SenseHat
-from datetime import datetime
+import smbus
+import time
 
-sense = SenseHat()
+# I2C bus (1 on most Pi models) and slave addresses
+bus = smbus.SMBus(1)
+INPUT_ADDR = 0x08
+OUTPUT_ADDR = 0x09
+MAX_READ = 32  # max bytes Arduino will send
 
-def get_sense_data():
-	sense_data = []
-	# Get environmental data
-	sense_data.append(sense.get_temperature())
-	sense_data.append(sense.get_pressure())
-	sense_data.append(sense.get_humidity())
-	# Get orientation data
-	orientation = sense.get_orientation()
-	sense_data.append(orientation["yaw"])
-	sense_data.append(orientation["pitch"])
-	sense_data.append(orientation["roll"])
-	# Get compass data
-	mag = sense.get_compass_raw()
-	sense_data.append(mag["x"])
-	sense_data.append(mag["y"])
-	sense_data.append(mag["z"])
-	# Get accelerometer data
-	acc = sense.get_accelerometer_raw()
-	sense_data.append(acc["x"])
-	sense_data.append(acc["y"])
-	sense_data.append(acc["z"])
-	#Get gyroscope data
-	gyro = sense.get_gyroscope_raw()
-	sense_data.append(gyro["x"])
-	sense_data.append(gyro["y"])
-	sense_data.append(gyro["z"])
-	# Get the date and time
-	sense_data.append(datetime.now())
 
-	return sense_data
+def read_input():
+    # Read up to MAX_READ bytes from InputUnit, trim trailing zeros, parse CSV
+    data = bus.read_i2c_block_data(INPUT_ADDR, 0, MAX_READ)
+    try:
+        end = data.index(0)
+        data = data[:end]
+    except ValueError:
+        pass
+    s = "".join(chr(b) for b in data)
+    temp_str, lux_str, btn_str = s.split(",")
+    return float(temp_str), int(lux_str), int(btn_str)
 
-while True:
-	print(get_sense_data())
+
+def read_color_index():
+    # Read single byte from OutputUnit
+    return bus.read_byte(OUTPUT_ADDR)
+
+
+def main():
+    try:
+        while True:
+            temp, lux, btn = read_input()
+            color_idx = read_color_index()
+            btn_state = "PRESSED" if btn else "Released"
+            print(
+                f"Temp: {temp:.2f}°C | Lux: {lux} | Button: {btn_state} | ColorIdx: {color_idx}"
+            )
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("\nArrêt du programme.")
+
+
+if __name__ == "__main__":
+    main()
