@@ -40,13 +40,23 @@ def read_color_index():
 def main():
     try:
         while True:
-            temp, lux, btn = read_input()
-            color_idx = read_color_index()
-            if temp is not None:
-                btn_state = "PRESSED" if btn else "Released"
-                print(
-                    f"Temp: {temp:.2f}°C | Lux: {lux} | Button: {btn_state} | ColorIdx: {color_idx}"
-                )
+            # Read raw CSV from input Arduino
+            raw = ser_in.readline().decode("ascii", errors="ignore").strip()
+            if not raw:
+                continue
+            print(f"DEBUG FORWARD: '{raw}'")
+            # Forward data to output Arduino
+            ser_out.write((raw + "\n").encode())
+            # Optionally parse and display locally
+            try:
+                temp_str, lux_str, btn_str = raw.split(",")
+                temp_val = float(temp_str)
+                lux_val = int(lux_str)
+                btn_val = int(btn_str)
+                state = "PRESSED" if btn_val else "Released"
+                print(f"Temp: {temp_val:.2f}°C | Lux: {lux_val} | Button: {state}")
+            except ValueError:
+                pass
             time.sleep(1)
     except KeyboardInterrupt:
         print("\nArrêt du programme.")
