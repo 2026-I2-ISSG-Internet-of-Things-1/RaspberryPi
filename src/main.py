@@ -27,12 +27,41 @@ def check_joystick():
     return False
 
 
+def check_web_commands():
+    """Vérifie s'il y a des commandes depuis le site web"""
+    try:
+        # Récupérer les dernières commandes non traitées
+        local_data = db_bridge.get_local_data(10)
+        for data in local_data:
+            if data['MyAssetType'] == 'command' and 'BUZZER' in data['MyAssetComment']:
+                command = data['MyAssetComment']
+                print(f"🌐 Commande reçue du site: {command}")
+                
+                if command == 'BUZZER_ON':
+                    print("🔊 Activation du buzzer depuis le site!")
+                    buzz_response = send_command(actionneurs, "CMD BUZZ")
+                    print(f"Buzzer response: {buzz_response}")
+                    
+                    # Marquer la commande comme traitée (optionnel)
+                    # Vous pouvez ajouter un champ "processed" si nécessaire
+                    
+                elif command == 'BUZZER_OFF':
+                    print("🔇 Désactivation du buzzer")
+                    # Le buzzer s'arrête automatiquement après le délai
+                    
+    except Exception as e:
+        print(f"❌ Erreur check_web_commands: {e}")
+
+
 try:
     loop_counter = 0
 
     while True:
         # === Vérification du joystick Sense HAT ===
         check_joystick()
+
+        # === Vérification des commandes web ===
+        check_web_commands()
 
         # === Lecture des capteurs sur ttyACM0 ===
         temp = send_command(capteurs, "GET TEMP")
