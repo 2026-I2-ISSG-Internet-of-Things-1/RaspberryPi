@@ -33,22 +33,30 @@ def check_web_commands():
         # Récupérer les dernières commandes non traitées
         local_data = db_bridge.get_local_data(10)
         for data in local_data:
-            if data['MyAssetType'] == 'command' and 'BUZZER' in data['MyAssetComment']:
-                command = data['MyAssetComment']
-                print(f"🌐 Commande reçue du site: {command}")
-                
-                if command == 'BUZZER_ON':
+            command = data["MyAssetComment"]
+
+            # Commandes buzzer
+            if data["MyAssetType"] == "command" and "BUZZER" in command:
+                print(f"🌐 Commande buzzer reçue du site: {command}")
+
+                if command == "BUZZER_ON":
                     print("🔊 Activation du buzzer depuis le site!")
                     buzz_response = send_command(actionneurs, "CMD BUZZ")
                     print(f"Buzzer response: {buzz_response}")
-                    
-                    # Marquer la commande comme traitée (optionnel)
-                    # Vous pouvez ajouter un champ "processed" si nécessaire
-                    
-                elif command == 'BUZZER_OFF':
+
+                elif command == "BUZZER_OFF":
                     print("🔇 Désactivation du buzzer")
                     # Le buzzer s'arrête automatiquement après le délai
-                    
+
+            # Commandes couleur LED RGB
+            elif data["MyAssetType"] == "command" and "SET_COLOR:" in command:
+                print(f"🌈 Commande couleur reçue du site: {command}")
+                color_response = send_command(actionneurs, command)
+                print(f"LED RGB response: {color_response}")
+
+    except Exception as e:
+        print(f"❌ Erreur check_web_commands: {e}")
+
     except Exception as e:
         print(f"❌ Erreur check_web_commands: {e}")
 
