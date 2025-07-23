@@ -1,5 +1,9 @@
 import serial
 import time
+from sense_hat import SenseHat
+
+# Configuration du Sense HAT
+sense = SenseHat()
 
 # Configuration des deux ports série
 capteurs = serial.Serial("/dev/ttyACM0", 9600, timeout=1)  # Arduino capteurs
@@ -12,8 +16,21 @@ def send_command(ser, command):
     return response
 
 
+def check_joystick():
+    """Vérifie si le joystick a été actionné dans une direction"""
+    events = sense.stick.get_events()
+    for event in events:
+        if event.action == "pressed":
+            print("joystick : USED")
+            return True
+    return False
+
+
 try:
     while True:
+        # === Vérification du joystick Sense HAT ===
+        check_joystick()
+
         # === Lecture des capteurs sur ttyACM0 ===
         temp = send_command(capteurs, "GET TEMP")
         lum = send_command(capteurs, "GET LUM")
