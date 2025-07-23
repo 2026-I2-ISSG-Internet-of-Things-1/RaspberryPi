@@ -10,6 +10,9 @@ sense = SenseHat()
 capteurs = serial.Serial("/dev/ttyACM0", 9600, timeout=1)  # Arduino capteurs
 actionneurs = serial.Serial("/dev/ttyACM1", 9600, timeout=1)  # Arduino actionneurs
 
+# Variable globale pour stocker le dernier message LCD du web
+last_web_message = ""
+
 
 def send_command(ser, command):
     ser.write((command + "\n").encode())
@@ -47,8 +50,38 @@ def check_joystick():
     return False
 
 
+def update_lcd_display(temp_string, web_message=""):
+    """Met à jour l'affichage LCD avec température en haut et message web en bas"""
+    global last_web_message
+    
+    if not temp_string or "TEMP:" not in temp_string:
+        return
+    
+    # Ligne 1: Température (limitée à 16 caractères)
+    temp_display = temp_string.replace("TEMP:", "Temp:") + "C"
+    temp_display = temp_display[:16]  # Limite à 16 caractères pour ligne 1
+    
+    # Ligne 2: Message web ou vide (limitée à 16 caractères)
+    message_display = (web_message or last_web_message)[:16]
+    
+    # Construire la commande LCD avec les deux lignes
+    # Format: "LCD_DUAL ligne1|ligne2"
+    if message_display:
+        lcd_command = f"LCD_DUAL {temp_display}|{message_display}"
+        print(f"Affichage LCD (2 lignes): '{temp_display}' + '{message_display}'")
+    else:
+        # Si pas de message web, afficher seulement la température
+        lcd_command = f"LCD {temp_display}"
+        print(f"Affichage LCD (1 ligne): '{temp_display}'")
+    
+    lcd_response = send_command(actionneurs, lcd_command)
+    print(f"LCD response: {lcd_response}")
+
+
 def check_web_commands():
     """Vérifie s'il y a des commandes depuis le site web"""
+    global last_web_message
+    
     try:
         # Récupérer les dernières commandes non traitées
         local_data = db_bridge.get_local_data(10)
@@ -77,8 +110,11 @@ def check_web_commands():
             # Commandes LCD
             elif data["MyAssetType"] == "command" and command.startswith("LCD "):
                 print(f"📱 Commande LCD reçue du site: {command}")
-                lcd_response = send_command(actionneurs, command)
-                print(f"LCD response: {lcd_response}")
+                # Extraire le message (enlever "LCD ")
+                message = command[4:]  # Enlever "LCD "
+                # Stocker le message pour l'affichage avec la température
+                last_web_message = message
+                print(f"Message LCD stocké: {last_web_message}")
 
     except Exception as e:
         print(f"❌ Erreur check_web_commands: {e}")
@@ -133,12 +169,9 @@ try:
             print(f"Buzzer response: {buzz_response}")
             time.sleep(0.1)  # Petit délai après le buzzer
 
-        # Afficher la température sur le LCD (vérifier que temp contient bien des données)
+        # Mettre à jour l'affichage LCD avec température + message web
         if temp and "TEMP:" in temp:
-            lcd_message = temp.replace("TEMP:", "Temp:") + "C"
-            print(f"Affichage LCD : {lcd_message}")
-            lcd_response = send_command(actionneurs, "LCD " + lcd_message)
-            print(f"LCD response: {lcd_response}")
+            update_lcd_display(temp)
         else:
             print(f"Erreur: température invalide reçue: {temp}")
 
