@@ -27,6 +27,8 @@ def check_joystick():
 
 
 try:
+    loop_counter = 0
+
     while True:
         # === Vérification du joystick Sense HAT ===
         check_joystick()
@@ -45,20 +47,29 @@ try:
         # Exemple : faire buzzer si bouton pressé
         if "PRESSED" in button:
             print("Bouton pressé : on déclenche le buzzer !")
-            print(send_command(actionneurs, "CMD BUZZ"))
+            buzz_response = send_command(actionneurs, "CMD BUZZ")
+            print(f"Buzzer response: {buzz_response}")
+            time.sleep(0.1)  # Petit délai après le buzzer
 
-        # Exemple : changer la LED RGB toutes les 5 boucles
-        if int(time.time() * 2) % 5 == 0:
+        # Exemple : changer la LED RGB toutes les 10 boucles (plus espacé)
+        if loop_counter % 10 == 0:
             print("Changement couleur RGB")
-            print(send_command(actionneurs, "CMD RGB NEXT"))
+            rgb_response = send_command(actionneurs, "CMD RGB NEXT")
+            print(f"RGB response: {rgb_response}")
+            time.sleep(0.1)  # Petit délai après le changement RGB
 
-        # Exemple : afficher la température sur le LCD
-        lcd_message = temp.replace("TEMP:", "Temp:") + "C"
-        print("Affichage LCD : " + lcd_message)
-        print(send_command(actionneurs, "LCD " + lcd_message))
+        # Afficher la température sur le LCD (vérifier que temp contient bien des données)
+        if temp and "TEMP:" in temp:
+            lcd_message = temp.replace("TEMP:", "Temp:") + "C"
+            print(f"Affichage LCD : {lcd_message}")
+            lcd_response = send_command(actionneurs, "LCD " + lcd_message)
+            print(f"LCD response: {lcd_response}")
+        else:
+            print(f"Erreur: température invalide reçue: {temp}")
 
         print("========================\n")
 
+        loop_counter += 1
         time.sleep(0.5)
 
 except KeyboardInterrupt:
