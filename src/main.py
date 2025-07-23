@@ -1,6 +1,7 @@
 import serial
 import time
 from sense_hat import SenseHat
+from database_bridge import db_bridge
 
 # Configuration du Sense HAT
 sense = SenseHat()
@@ -43,6 +44,24 @@ try:
         print(lum)
         print(button)
 
+        # === Stockage en base locale ===
+        # Stocker température
+        if temp and "TEMP:" in temp:
+            temp_value = float(temp.replace("TEMP:", ""))
+            db_bridge.store_sensor_data("temperature", "Arduino Temp", temp_value, "°C")
+
+        # Stocker luminosité
+        if lum and "LUM:" in lum:
+            lum_value = float(lum.replace("LUM:", ""))
+            db_bridge.store_sensor_data("light", "Arduino Light", lum_value, "%")
+
+        # Stocker état bouton
+        if button:
+            button_value = 1.0 if "PRESSED" in button else 0.0
+            db_bridge.store_sensor_data(
+                "button", "Arduino Button", button_value, "bool"
+            )
+
         # === Commandes actionneurs sur ttyACM1 ===
         # Exemple : faire buzzer si bouton pressé
         if "PRESSED" in button:
@@ -70,6 +89,12 @@ try:
         print("========================\n")
 
         loop_counter += 1
+
+        # Synchroniser avec le cloud toutes les 10 boucles
+        if loop_counter % 10 == 0:
+            print("🔄 Synchronisation avec le cloud...")
+            db_bridge.sync_to_cloud()
+
         time.sleep(0.5)
 
 except KeyboardInterrupt:
