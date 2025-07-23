@@ -74,6 +74,12 @@ def check_web_commands():
                 color_response = send_command(actionneurs, command)
                 print(f"LED RGB response: {color_response}")
 
+            # Commandes LCD
+            elif data["MyAssetType"] == "command" and command.startswith("LCD "):
+                print(f"📱 Commande LCD reçue du site: {command}")
+                lcd_response = send_command(actionneurs, command)
+                print(f"LCD response: {lcd_response}")
+
     except Exception as e:
         print(f"❌ Erreur check_web_commands: {e}")
 
