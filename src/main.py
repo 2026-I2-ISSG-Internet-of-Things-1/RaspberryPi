@@ -18,11 +18,20 @@ def send_command(ser, command):
 
 
 def check_joystick():
-    """Vérifie si le joystick a été actionné dans une direction"""
+    """Vérifie si le joystick a été actionné dans une direction et stocke l'événement"""
     events = sense.stick.get_events()
     for event in events:
         if event.action == "pressed":
-            print("joystick : USED")
+            direction = event.direction
+            print(f"joystick : {direction} PRESSED")
+            
+            # Stocker l'événement joystick en base locale
+            try:
+                db_bridge.store_sensor_data("joystick", "Sense HAT Joystick", 1.0, "direction", f"Direction: {direction}")
+                print(f"✅ Joystick {direction} stocké en base")
+            except Exception as e:
+                print(f"❌ Erreur stockage joystick: {e}")
+            
             return True
     return False
 
