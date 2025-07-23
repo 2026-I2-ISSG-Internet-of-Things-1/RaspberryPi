@@ -107,13 +107,6 @@ try:
             print(f"Buzzer response: {buzz_response}")
             time.sleep(0.1)  # Petit délai après le buzzer
 
-        # Exemple : changer la LED RGB toutes les 10 boucles (plus espacé)
-        if loop_counter % 10 == 0:
-            print("Changement couleur RGB")
-            rgb_response = send_command(actionneurs, "CMD RGB NEXT")
-            print(f"RGB response: {rgb_response}")
-            time.sleep(0.1)  # Petit délai après le changement RGB
-
         # Afficher la température sur le LCD (vérifier que temp contient bien des données)
         if temp and "TEMP:" in temp:
             lcd_message = temp.replace("TEMP:", "Temp:") + "C"
