@@ -24,14 +24,25 @@ def check_joystick():
         if event.action == "pressed":
             direction = event.direction
             print(f"joystick : {direction} PRESSED")
-            
+
             # Stocker l'événement joystick en base locale
             try:
-                db_bridge.store_sensor_data("joystick", "Sense HAT Joystick", 1.0, "direction", f"Direction: {direction}")
+                db_bridge.store_sensor_data(
+                    "joystick",
+                    "Sense HAT Joystick",
+                    1.0,
+                    "direction",
+                    f"Direction: {direction}",
+                )
                 print(f"✅ Joystick {direction} stocké en base")
+
+                # Synchronisation immédiate pour les événements joystick
+                print("🔄 Synchronisation immédiate du joystick...")
+                db_bridge.sync_to_cloud()
+
             except Exception as e:
                 print(f"❌ Erreur stockage joystick: {e}")
-            
+
             return True
     return False
 
@@ -133,6 +144,18 @@ try:
         if loop_counter % 10 == 0:
             print("🔄 Synchronisation avec le cloud...")
             db_bridge.sync_to_cloud()
+
+            # Debug: afficher les dernières données locales
+            if loop_counter % 50 == 0:  # Moins fréquent pour éviter le spam
+                try:
+                    local_data = db_bridge.get_local_data(5)
+                    print(f"📊 Dernières données locales ({len(local_data)} entrées):")
+                    for data in local_data:
+                        print(
+                            f"  - {data['MyAssetType']}: {data['MyAssetComment']} ({data['MyAssetTimeStamp']})"
+                        )
+                except Exception as e:
+                    print(f"❌ Erreur lecture données locales: {e}")
 
         time.sleep(0.5)
 
